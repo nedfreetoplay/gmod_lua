@@ -2,7 +2,10 @@
 
 I write slowly
 
-Contact:
-youtube.com/user/zablik23
-steamcommunity.com/id/nedfreetoplay/
+Contact: 
+
+youtube.com/user/zablik23 
+
+steamcommunity.com/id/nedfreetoplay/ 
+
 vk.com/merykova
