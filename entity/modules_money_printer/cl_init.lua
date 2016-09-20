@@ -27,7 +27,6 @@ function ENT:Draw()
 	elseif Upgrades == 5 then self:SetColor( Color( 0, 242, 242, 255 ) )
 	end
 	local FillBur = math.floor(self:GetNWInt("interval")*math.abs(self:GetNWFloat("ProgressBar")-1))
-	local Upgrade = self:GetNWInt("PBarUpgrade")
 	local HotBur = nil
 	local Pos = self:GetPos()
 	local Ang = self:GetAngles()
@@ -85,14 +84,17 @@ function ENT:Draw()
 			draw.RoundedBox(0,-13.5*10,6.5*10,80,3*10,HotBur) --Hot
 		end
 		draw.RoundedBox(0,-13.5*10,11*10,8*10,3*10,Color(200,200,200)) --Upgrade
-		draw.RoundedBox(0,-13.5*10,11*10,Upgrade,3*10,Color(255,120,0)) --Upgrade
+		draw.RoundedBox(0,-13.5*10,11*10,self:GetNWInt("Upgrade")*16,3*10,Color(255,120,0)) --Upgrade
 
 		--Paper,Color
 		draw.RoundedBox(10,-4*10,6*10,13.5*10,4*10,Color(0,0,0,120))
 		draw.RoundedBox(10,-4*10,10.5*10,13.5*10,4*10,Color(0,0,0,120))
 
-		draw.RoundedBox(0,-3.5*10,11*10,12.5*10,3*10,Color(200,200,200))
 		draw.RoundedBox(0,-3.5*10,6.5*10,12.5*10,3*10,Color(200,200,200))
+		draw.RoundedBox(0,-3.5*10,11*10,12.5*10,3*10,Color(200,200,200))
+
+		draw.RoundedBox(0,-3.5*10,6.5*10,self:GetNWInt("paint")*6.25,3*10,Color(0,0,0))
+		draw.RoundedBox(0,-3.5*10,11*10,self:GetNWInt("paper")*12.5,3*10,Color(255,255,255))
 
 		--On/OFF
 		draw.RoundedBox(10,10.5*10,6*10,4.5*10,8.5*10,Color(0,0,0,120))
@@ -102,12 +104,21 @@ function ENT:Draw()
 		--[[ ProgressBar --]]
 		--draw.RoundedBox(0,-13*10,-7*10,27*10,2*10,Color(255,120,120))
 		--draw.RoundedBox(0,-13*10,-7*10, FillBur, 2*10,Color(0,200,0))
-		draw.SimpleText( "0:"..FillBur.." сек.", "MoneyFont2", 0, -50, TurnPBC, 1, 1 )
+		draw.SimpleText( FillBur.." сек.", "MoneyFont2", 0, -50, TurnPBC, 1, 1 )
 
 		draw.SimpleText( self:GetNWInt("Upgrade").."/5", "HotFont", -95, 125, Color( 255,255,255 ), 1, 1 )
 		draw.SimpleText( self:GetNWInt("Hot").."°", "HotFont", -95, 80, Color( 255,255,255 ), 1, 1 )
 		draw.SimpleText( owner, "MoneyFont", 0, -120, Color( 255, 120, 0 ), 1, 1 )
 		draw.SimpleText( self:GetMoneyAmount().."$", "MoneyFont2", 0, 20, Color( 0, 200, 0 ), 1, 1 )
+	cam.End3D2D()
+	--And
+	
+	Ang:RotateAroundAxis( Ang:Forward(), 90 )
+
+	cam.Start3D2D(Pos *1.0 + Ang:Up() * 17, Ang, 0.1)
+		draw.RoundedBox(10,-14*10,-10*10,29*10,6*10,Color(0,0,0,120))
+		draw.RoundedBox(0,-13.5*10,-9.5*10,28*10,5*10,Color(200,200,200))
+		draw.RoundedBox(0,-13.5*10,-9.5*10,self:GetNWInt("Health")*2.8,5*10,Color(255,100,100))
 	cam.End3D2D()
 	--cooler:Remove()
 end
