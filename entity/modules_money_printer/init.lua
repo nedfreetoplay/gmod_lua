@@ -33,7 +33,6 @@ function ENT:Initialize()
 	self.maxUpgrade = 5
 	self.CoolDownOnUse = 0
 
-	self:SetOwner( self.Owner )
 	self:SetNWBool( "turn", true )
 	self:SetNWInt("interval", MLevel[1][2])
 	self:SetNWInt("Upgrade", 0)
@@ -45,8 +44,12 @@ end
 function ENT:SpawnFunction( ply, tr, ClassName )
 	if ( !tr.Hit ) then return end
 	local SpawnPos = tr.HitPos + tr.HitNormal * 16
+	local Ang = ply:GetAngles()
+	Ang:RotateAroundAxis( Ang:Forward(), 180 )
+	Ang:RotateAroundAxis( Ang:Right(), 180 )
 	local ent = ents.Create( ClassName )
 	ent:SetPos( SpawnPos )
+	ent:SetAngles( Ang )
 	ent:Setowning_ent(ply)
 	ent:Spawn()
 	ent:Activate()
@@ -72,6 +75,17 @@ function ENT:Destruct()
 	end
 end
 
+function ENT:Extract()
+	if self:GetNWInt("Cooler") == false then return end
+	self:SetNWInt("Cooler", false )
+	local x,y,z = self:GetPos() + self:GetAngles():Forward() * 33
+	local SpawnPos = Vector( x, y, z )
+	local ent = ents.Create( "module_cooler" )
+	ent:SetPos( SpawnPos )
+	ent:Spawn()
+	ent:Activate()
+end
+
 function ENT:Try()
 	if self:GetNWInt("paper") > 0 and self:GetNWInt("paint") > 0 then
 		self:SetNWInt("paper", self:GetNWInt("paper")-1)
@@ -91,7 +105,7 @@ end
 
 function ENT:Think()
 	if self.CoolDownOnUse > 0 then self.CoolDownOnUse = self.CoolDownOnUse - 1 end
-	if self:GetNWInt("Hot") >= 100 then 
+	if self:GetNWInt("Hot") >= 100 and self:GetNWBool("turn") == false then
 		self:SetNWInt("Health", self:GetNWInt("Health") -1 )
 		if self:GetNWInt("Health") <= 0 then self:Destruct() end
 	end
@@ -142,12 +156,15 @@ function ENT:Use( act, call )
 		else
 			self:SetNWBool( "turn", true )
 		end
-		self.CoolDownOnUse = 5
-	elseif money > 0 then
+	elseif tr.Entity == self and pos.x > 6.5 and pos.x < 9.5 and pos.y > -14.5 and 
+		pos.y < -6 and self.CoolDownOnUse == 0 then
+		self:Extract()
+	elseif money > 0 and self.CoolDownOnUse == 0 then
 		DarkRP.notify( call, 0, 4, "Вы взяли "..money.."$ из принтера!" )
 		self:SetMoneyAmount(0)
 		Ply:addMoney(money)
 	end
+	self.CoolDownOnUse = 5
 end
 
 function ENT:module_upgrade( entity )
