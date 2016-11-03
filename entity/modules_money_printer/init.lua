@@ -4,20 +4,8 @@ AddCSLuaFile("shared.lua")
 util.AddNetworkString("receiveMessage")
 
 include("shared.lua")
-
---Изменяемые переменные
-	local MaxFactor = 10
-	local HotDecr = 10
 	local LocalTime = nil
-	--{Money,Interval}
-	local MLevel = {
-	{10,60},
-	{15,60},
-	{25,50},
-	{35,50},
-	{50,40},
-	{60,20},
-}
+	local Cfg = ImpCfg
 
 function ENT:Initialize()
 	self:SetModel("models/props_c17/consolebox01a.mdl")
@@ -28,17 +16,21 @@ function ENT:Initialize()
 	if phys:IsValid() then phys:Wake() end
 
 	self.timer = CurTime()
-	self.giveMoney = MLevel[1][1]
-	self.maxMoney = MLevel[1][1] * MaxFactor
-	self.maxUpgrade = 5
-	self.CoolDownOnUse = 0
+	self.giveMoney = Cfg.StatUpgrade[1][1]
+	self.maxMoney = Cfg.StatUpgrade[1][1] * Cfg.MaxVolume
+	self.CoolDownOnUse = 10
 
-	self:SetNWBool( "power", true )
-	self:SetNWInt( "interval", MLevel[1][2] )
-	self:SetNWInt( "Upgrade", 0 )
-	self:SetNWInt( "paper", 5 )
-	self:SetNWInt( "paint", 10 )
-	self:SetNWInt( "Health", 100 )
+	self:SetNWBool( "power", Cfg.Power )
+	self:SetNWInt( "interval", Cfg.StatUpgrade[2][1] )
+	self:SetNWInt( "Upgrade", Cfg.PrimaryUpgrade )
+	self:SetNWInt( "paper", Cfg.SpawnPaper )
+	self:SetNWInt( "paint", Cfg.SpawnPaint )
+	self:SetNWInt( "Health", Cfg.healthPrinter )
+	self:SetNWBool( "Unc", false)
+
+	if not Cfg.Power then
+		LocalTime = CurTime()
+	end
 end
 
 function ENT:SpawnFunction( ply, tr, ClassName )
@@ -76,7 +68,8 @@ function ENT:Destruct()
 end
 
 function ENT:Extract()
-	if self:GetNWBool( "Cooler" ) == false then return end
+	if self:GetNWBool( "Cooler" ) == false or 
+		Cfg.ExtractionCooler == false then return end
 	self:SetNWInt( "Cooler", false )
 	local x, y, z = self:GetPos() + self:GetAngles():Forward() * 33
 	local SpawnPos = Vector( x, y, z )
@@ -99,30 +92,37 @@ function ENT:Try()
 	else self:SetNWInt( "ignite", 1 ) end
 
 	if self:GetNWBool( "Cooler" ) == true and self:GetNWInt( "Hot" ) > 0 then
-		self:SetNWInt( "Hot", self:GetNWInt( "Hot" ) - HotDecr )
+		self:SetNWInt( "Hot", self:GetNWInt( "Hot" ) - Cfg.HotDecrease )
 		if self:GetNWInt( "Hot" ) < 0 then self:SetNWInt( "Hot", 0 ) end
 	end
 end
 
 function ENT:Think()
-	if self.CoolDownOnUse > 0 then self.CoolDownOnUse = self.CoolDownOnUse - 1 end
-	if self:GetNWInt( "Hot" ) >= 100 and self:GetNWBool( "power" ) == false then
+	if self.CoolDownOnUse > 0 then
+		self.CoolDownOnUse = self.CoolDownOnUse - 1 end
+	if self:GetNWInt( "Hot" ) >= 100 and 
+		self:GetNWBool( "power" ) and
+		self:GetNWBool( "Cooler" ) == false then
 		self:SetNWInt( "Health", self:GetNWInt( "Health" ) - 1 )
 		if self:GetNWInt( "Health" ) <= 0 then self:Destruct() end
 	end
 	--ProgressBar
-	if ( CurTime() - self.timer ) / self:GetNWInt( "interval" ) > 1 then
-		self:SetNWFloat( "ProgressBar", 1 )
+	local Time = Lerp( (CurTime() - self.timer)/self:GetNWInt( "interval" ), 0 , 360 )
+	
+	if Time > 360 then
+		self:SetNWFloat( "ProgressBar", 360 )
 	else
 		if self:GetNWBool( "power" ) then
 			LocalTime = CurTime() - self.timer
-			self:SetNWFloat( "ProgressBar", LocalTime / self:GetNWInt( "interval" ) )
+			self:SetNWFloat( "ProgressBar", Time )
 		else self.timer = CurTime() - LocalTime end
 	end
+	--print(self:GetNWFloat( "ProgressBar" ))
 
 	if CurTime() >= self.timer + self:GetNWInt( "interval" ) then
 		self.timer = CurTime()
-		if self:GetMoneyAmount() < self.maxMoney then
+		if self:GetMoneyAmount() < self.maxMoney and 
+			self:GetNWBool("power") then
 			self:Try()
 		end
 	end
@@ -148,21 +148,19 @@ function ENT:Use( act, call )
 
 	local pos = self.Entity:WorldToLocal( tr.HitPos )
 	local money = self:GetMoneyAmount()
-
-	if tr.Entity == self and pos.y > 12.3 and pos.y < 15 and pos.z > 4.4 and 
-		pos.z < 9.6 and self.CoolDownOnUse == 0 then
+	
+	if tr.Entity == self and pos.y > 11.8 and pos.y < 15 and pos.x > 14.8 and 
+		pos.x < 15.9 and self.CoolDownOnUse == 0 then
 		if self:GetNWBool( "power" ) == true then
 			self:SetNWBool( "power", false )
-		else
-			self:SetNWBool( "power", true )
-		end
+		else self:SetNWBool( "power", true ) end
 		self.CoolDownOnUse = 5
-	elseif tr.Entity == self and pos.y > -13.5 and pos.y < 11 and pos.z > 4.4 and 
-		pos.z < 9.55 and self.CoolDownOnUse == 0 then
+	elseif tr.Entity == self and pos.y > -14.6 and pos.y < -11.6 and pos.x > 14.8 and 
+		pos.x < 16 and self.CoolDownOnUse == 0 then
 		self:Extract()
 		self.CoolDownOnUse = 5
 	elseif money > 0 and self.CoolDownOnUse == 0 then
-		DarkRP.notify( call, 0, 4, "You take "..money.."$ from Money Printer!" )
+		DarkRP.notify( call, 0, 4, Cfg.PaymentText1..money..Cfg.PaymentText2 )
 		self:SetMoneyAmount(0)
 		act:addMoney( money )
 		self.CoolDownOnUse = 5
@@ -172,9 +170,9 @@ end
 function ENT:module_upgrade( entity )
 	entity:Remove()
 	self:SetNWInt( "Upgrade", self:GetNWInt( "Upgrade" ) + 1 )
-	self.giveMoney = MLevel[self:GetNWInt( "Upgrade" ) + 1][1]
-	self:SetNWInt( "interval", MLevel[self:GetNWInt( "Upgrade" ) + 1][2])
-	self.maxMoney = MLevel[self:GetNWInt( "Upgrade" ) + 1][1] * MaxFactor
+	self.giveMoney = Cfg.StatUpgrade[1][self:GetNWInt( "Upgrade" ) + 1]
+	self:SetNWInt( "interval", Cfg.StatUpgrade[2][self:GetNWInt( "Upgrade" ) + 1])
+	self.maxMoney = Cfg.StatUpgrade[1][self:GetNWInt( "Upgrade" ) + 1] * Cfg.MaxVolume
 end
 
 function  ENT:StartTouch( entity )
@@ -183,14 +181,14 @@ function  ENT:StartTouch( entity )
 		entity:Remove()
 		self:SetNWBool( "Cooler", true )
 	elseif entity:GetClass() == "module_paper" and 
-		self:GetNWInt( "paper" ) <= 5 then
+		self:GetNWInt( "paper" ) <= Cfg.MaxPaper-Cfg.ReFillPaper then
 		entity:Remove()
-		self:SetNWInt( "paper", self:GetNWInt( "paper" ) + 5 )
+		self:SetNWInt( "paper", self:GetNWInt( "paper" ) + Cfg.ReFillPaper )
 	elseif entity:GetClass() == "module_paint" and 
-		self:GetNWInt( "paint" ) <= 10 then
+		self:GetNWInt( "paint" ) <= Cfg.MaxPaint-Cfg.ReFillPaint then
 		entity:Remove()
-		self:SetNWInt( "paint", self:GetNWInt( "paint" ) + 10 ) end
-	for i=1,5 do
+		self:SetNWInt( "paint", self:GetNWInt( "paint" ) + Cfg.ReFillPaint ) end
+	for i=1,Cfg.MaxUpgrade do
 		if entity:GetClass() == "module_upgrade_lv"..i and 
 			self:GetNWInt( "Upgrade" ) == i - 1	then
 		self:module_upgrade( entity ) end

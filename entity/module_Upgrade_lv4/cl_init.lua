@@ -1,7 +1,8 @@
 include("shared.lua")
 
 function ENT:Draw()
+	local Cfg = ImpCfg
 	self:DrawModel()
-	self:SetMaterial("models/shiny", false)
-	self:SetColor( Color( 29, 223, 0, 255 ) )
+	self:SetMaterial( "models/shiny", false )
+	self:SetColor( Cfg.UpgradeColor4 )
 end

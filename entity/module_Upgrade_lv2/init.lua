@@ -4,8 +4,8 @@ AddCSLuaFile("shared.lua")
 include("shared.lua")
 
 function ENT:Initialize()
-
-	self:SetModel("models/props_phx/wheels/magnetic_med_base.mdl")
+	local Cfg = ImpCfg
+	self:SetModel( Cfg.UpgradeModel2 )
 
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
